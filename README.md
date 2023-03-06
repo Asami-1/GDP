@@ -3,6 +3,9 @@ Repository related to Cranfield's AAI MSCs GDP
 
 ## Steps to use VitPose
 
+Download the weights at https://onedrive.live.com/?authkey=%21AMfI3aaOHafYvIY&id=E534267B85818129%21166&cid=E534267B85818129&parId=root&parQt=sharedby&parCid=D632C8CD854B2F0E&o=OneUp 
+Place them at the root of the pose directory.
+
 We use a conda for dependencies.
 ```
 conda create --name vitenv python=3.7.2
