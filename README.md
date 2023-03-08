@@ -27,16 +27,16 @@ git clone https://github.com/ViTAE-Transformer/ViTPose.git
 cd ViTpose
 pip install -v -e . 
 ```
-
+Install YOLOv8 
+```
+pip install ultralytics
+```
 You should now be able to run the script.py 
 ```
 cd ..
 python script.py
 ```
-Install YOLOv8 
-```
-pip install ultralytics
-```
+
 
 You should see a test_labeled file appear.
 
