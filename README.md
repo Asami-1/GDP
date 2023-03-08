@@ -33,6 +33,10 @@ You should now be able to run the script.py
 cd ..
 python script.py
 ```
+Install YOLOv8 
+```
+pip install ultralytics
+```
 
 You should see a test_labeled file appear.
 
