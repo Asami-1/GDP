@@ -1,6 +1,6 @@
 _base_ = [
-    '../ViTPose/configs/_base_/default_runtime.py',
-    '../ViTpose/configs/_base_/datasets/coco.py'
+    '../ViTPose_files/configs/_base_/default_runtime.py',
+    '../ViTpose_files/configs/_base_/datasets/coco.py'
 ]
 evaluation = dict(interval=10, metric='mAP', save_best='AP')
 

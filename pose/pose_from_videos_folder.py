@@ -5,7 +5,7 @@ import json
 
 from ultralytics import YOLO
 
-sys.path.insert(0, 'ViTPose/')
+sys.path.insert(0, 'ViTPose_files')
 from mmpose.apis import init_pose_model, inference_top_down_pose_model
 
 '''
