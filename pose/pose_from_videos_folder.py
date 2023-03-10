@@ -14,8 +14,8 @@ of all the videos in the folder {videos_path}
 into the target folder {data_path}
 '''
 
-videos_path=r""
-data_path=r""
+videos_path=r"A-Dataset-for-Automatic-Violence-Detection-in-Videos-master\violence-detection-dataset\non_violent\cam2"
+data_path=r"result_peace_cam2"
 
 # Initialize detection model
 det_model = YOLO("yolov8n.pt")
