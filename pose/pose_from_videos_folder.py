@@ -14,8 +14,8 @@ of all the videos in the folder {videos_path}
 into the target folder {data_path}
 '''
 
-videos_path=r"A-Dataset-for-Automatic-Violence-Detection-in-Videos-master\violence-detection-dataset\non_violent\cam2"
-data_path=r"result_peace_cam2"
+videos_path=r"A-Dataset-for-Automatic-Violence-Detection-in-Videos-master\violence-detection-dataset\violent\cam1"
+data_path=r"result_conflict_cam1"
 
 # Initialize detection model
 det_model = YOLO("yolov8n.pt")
@@ -27,6 +27,7 @@ pose_model = init_pose_model("./configs/ViTPose_huge_simple_coco_256x192.py","./
 # For every video
 
 for video_file_name in os.listdir(videos_path):
+   if video_file_name == '9.mp4':
     video_file_path=os.path.join(videos_path,video_file_name)
 
     video_file_base = os.path.splitext(video_file_name)[0]
