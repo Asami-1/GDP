@@ -1,10 +1,14 @@
 # start by pulling the python image
-FROM python:3.8-alpine
+FROM nvidia/cuda:11.7.0-devel-ubuntu18.04
 RUN apk update
 RUN apk add make automake gcc g++ subversion python3-dev
 
 # copy the requirements file into the image
 COPY ./requirements.txt /app/requirements.txt
+
+# copy pose related modules
+COPY ../pose/configs  /app/pose/configs
+COPY ../pose/vitpose-h-simple.pth /app/pose/vitpose-h-simple.pth
 
 # switch working directory
 WORKDIR /app
