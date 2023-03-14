@@ -31,15 +31,18 @@ Folders description :
   Peace : contain all peace videos from the 2 cams
 
   data_full arborescence :
-	  train
-		  conflict
+  
+  	data_full
+  
+	  	train
+		  	conflict
 		
-		  peaceful
+		  	peaceful
 			
-	  test
-		  conflict
+	 	 test
+		  	conflict
 			
-		  peaceful
+		  	peaceful
 
 (split 75 / 25) 
 
