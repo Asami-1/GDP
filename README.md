@@ -23,3 +23,25 @@ python pose_from_videos_folder.py
 ```
 
 
+Data Generation part: 
+
+Folders description : 
+
+  Agressive : contain all agressive videos from the 2 cams
+  Peace : contain all peace videos from the 2 cams
+
+  data_full arborescence :
+	  train
+		  conflict
+		
+		  peaceful
+			
+	  test
+		  conflict
+			
+		  peaceful
+
+(split 75 / 25) 
+
+If we want to use the only 4 first seconds of each videos, there is a script "dataset_gen_fixed_time.py" which creates a new dataset from data_full but containing video_duration*30 json files in each folder.
+
