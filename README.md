@@ -23,9 +23,9 @@ python pose_from_videos_folder.py
 ```
 
 
-Data Generation part: 
+## Data Generation part: 
 
-Folders description : 
+# Folders description : 
 
   Agressive : contain all agressive videos from the 2 cams
   Peace : contain all peace videos from the 2 cams
