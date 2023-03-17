@@ -67,63 +67,69 @@ def extractFeatures (keypoints_data):
     
     return row_features
 
-
-def features_from_data_folder(json_files_path, seq_results_path, frames_per_seq, window):
-
+def features_from_data_folder(root_folder_path, seq_results_path, frames_per_seq, window):
     '''
-    json_files_path: Path to folder with JSON files with ViTPose results (Folders done by Quentin)
+    root_folder_path: Path to root folder containing subfolders with JSON files with ViTPose results
     seq_results_path: Target folder
     frames_per_seq
     window: (Integer < frames_per_seq). At every "window" frames a sequence starts.
             By doing window = frames_per_seq => sequence only starts after previous sequence ends
-
     '''
-    folder_name=os.path.split(json_files_path)[1]
-    json_files=os.listdir(json_files_path)
+    n_seq = 1
+    for root, dirs, files in os.walk(root_folder_path):
+        for dir_name in dirs:
+            folder_path = os.path.join(root, dir_name)
+            folder_name = os.path.split(folder_path)[1]
+            json_files = [f for f in os.listdir(folder_path) if f.endswith('.json')]
 
-    frames_in_video=len(json_files)
+            frames_in_video = len(json_files)
+            starting_seq_frame = list(range(0, frames_in_video - frames_per_seq + 1, window))
 
-    starting_seq_frame=list(range(0, frames_in_video-frames_per_seq+1, window))
+            for frame_counter_base in starting_seq_frame:
+                seq_features = [[] for i in range(frames_per_seq)]
+                for frame in range(frames_per_seq):
+                    frame_counter = frame_counter_base + frame
+                    json_path = os.path.join(folder_path, json_files[frame_counter])
 
-    n_seq=1
+                    with open(json_path, 'r') as f:
+                        frame_data = json.load(f)
 
-    for frame_counter_base in starting_seq_frame:
+                    max_people = 5 
 
-        seq_features=[[] for i in range(frames_per_seq)]
-        for frame in range(frames_per_seq):
+                    frame_features = np.full((max_people, 3 * len(joints)), 0.0) # If there is less than 5 people in the frame, sets the keypoints to 0
 
-            frame_counter=frame_counter_base+frame
-            json_path=os.path.join(json_files_path,json_files[frame_counter])
-            
-            with open(json_path, 'r') as f:
-                frame_data = json.load(f)
+                    for i in range(len(frame_data)):
+                        row = frame_data[i]['track_id']
+                        if row >= max_people:
+                            print(f"Error: row {folder_name} is causing the problem")
+                            continue
+                        frame_features[row] = extractFeatures(frame_data[i]['keypoints'])
 
-            '''
-            # Not needed right now, as our dataset has maximum of 4 people
+                    seq_features[frame] = frame_features.tolist()
 
-            IDs=[]
-            for i in range(len(frame_data)):
-                IDs.append(frame_data[i]['track_id'])
+                if not os.path.exists(seq_results_path):
+                    os.makedirs(seq_results_path)
 
-            max_ID=max(IDs) 
-            max_people=max_ID
-            '''
-            max_people=6
+                with open(os.path.join(seq_results_path, f"{folder_name}_seq_{n_seq}.json"), "w") as file:
+                    # Serialize the list to JSON format
+                    json.dump(seq_features, file, indent=2)
 
-            frame_features=np.full((max_people,3*len(joints)),-1.0) # "3" is beacause joint longitud, angle sine, angle cosine 
+                n_seq += 1
+                
+""" 
 
-            for i in range(len(frame_data)):           
-                row=frame_data[i]['track_id']
-                frame_features[row]=extractFeatures (frame_data[i]['keypoints'])
+# Use:
 
-            seq_features[frame]=frame_features.tolist()
+# features_from_data_folder(root_folder_path, seq_results_path, frames_per_seq, window)
 
-        if not os.path.exists(seq_results_path):
-            os.makedirs(seq_results_path)
 
-        with open(os.path.join(seq_results_path,f"{folder_name}_seq_{n_seq}.json"), "w") as file:
-                # Serialize the list to JSON format
-                json.dump(seq_features, file, indent=2)
+features_from_data_folder("/Users/irem/Desktop/data_full_deleted/train/peaceful","/Users/irem/Desktop/sample/train/Peaceful",30,30)
 
-        n_seq+=1
+features_from_data_folder("/Users/irem/Desktop/data_full_deleted/test/peaceful","/Users/irem/Desktop/sample/test/Peaceful",30,30)
 
+features_from_data_folder("/Users/irem/Desktop/data_full_deleted/train/conflict","/Users/irem/Desktop/sample/train/Agressive",30,30)
+
+features_from_data_folder("/Users/irem/Desktop/data_full_deleted/test/conflict","/Users/irem/Desktop/sample/test/Agressive",30,30)
+
+
+"""
