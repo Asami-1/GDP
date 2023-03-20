@@ -5,17 +5,19 @@ import numpy as np
 import PIL.Image as Image
 import matplotlib.pyplot as plt
 from ultralytics import YOLO
+from deep_sort_realtime.deepsort_tracker import DeepSort
 from custom_tracking import custom_tracking
 import cv2
-
+import time
 from mmpose.apis import (inference_top_down_pose_model, init_pose_model,
                          process_mmdet_results, vis_pose_result)
 
 det_model = YOLO("yolov8n.pt")
 
-pose_config = "./configs/ViTPose_huge_simple_coco_256x192.py"
-pose_checkpoint = "./vitpose-h-simple.pth"
+pose_config = "./configs/ViTPose_small_coco_256x192.py"
+pose_checkpoint = "./vitpose_small.pth"
 pose_model = None
+tracker = DeepSort(max_age=5)
 
 app = Flask(__name__)
 
@@ -28,6 +30,18 @@ def load_models():
     pose_model = init_pose_model(pose_config,pose_checkpoint)
 
 
+def YOLO_preprocess(bbs_YOLO):
+    bbs=[]
+    for p, p_data in enumerate(bbs_YOLO):
+        person=[]
+        person.append(bbs_YOLO[p][range(4)])
+        person.append(bbs_YOLO[p][4])
+        person.append(bbs_YOLO[p][5])
+        bbs.append(person)
+    
+    return bbs
+
+
 def process_yolo_results (yolo_results):
 
     results=yolo_results[0].boxes.boxes.to('cpu').numpy()
@@ -36,6 +50,16 @@ def process_yolo_results (yolo_results):
     for i in range(len(results)):
         person = {}
         person['bbox'] = results[i][range(5)]
+        person_results.append(person)
+
+    return person_results
+
+def DS_preprocess(tracks):
+    person_results=[]
+    for i in range(len(tracks)):
+        person = {}
+        person['bbox'] = np.append(tracks[i].to_ltwh(),tracks[i].det_conf)
+        person['track_id'] = tracks[i].track_id
         person_results.append(person)
 
     return person_results
@@ -61,76 +85,62 @@ def draw_data_on_image(image,results) :
     return copy
 
 def gen():  
-    FirstDetected=False
-    SecondDetection=False
-    length=15
-    list_lastouts=[[] for i in range(length)]
+
     while True :
+        start_yolo = time.time()
         image = np.array(Image.open(io.BytesIO(frame)))
 
         if not (image == images[-1]).all() :
             images.append(image)
-            print("added a frame to frame list")
-            print('current number of frames :',len(images))            
-            results = det_model(image)
-            person_results= process_yolo_results(results)
+            # -------------  YOLO-------------
+            # print("added a frame to frame list")
+            # print('current number of frames :',len(images))            
+            results = det_model(image,classes=0,conf=0.4,iou=0.6)
+            bbs=YOLO_preprocess(results[0].boxes.boxes.cpu().numpy())
+           
+            end_yolo = time.time()
+            print("Yolo detection time :",end_yolo-start_yolo) 
 
-            out, _ = inference_top_down_pose_model(pose_model,image,person_results,bbox_thr=0.5,format='xyxy')
+        #  ------------------------ DeepSort -------------------------------
+            start_DS = time.time()
+            tracks = tracker.update_tracks(bbs, frame=image) # bbs expected to be a list of detections, each in tuples of ( [left,top,w,h], confidence, detection_class )
+            
+            # Find indexes to delete 
+            idx_to_delete=[]
+            for p in range(len(tracks)):
+                found=False
+                for p2 in range(len(bbs)):
+                    if (tracks[p].to_ltwh(orig=True) == bbs[p2][0]).all():
+                        found=True
+                if not found:
+                    idx_to_delete.append(p)
+            idx_to_delete.reverse()
+            for idx in idx_to_delete:
+                del tracks[idx]                   
+            end_DS = time.time()
+            print("Deep Sort tracking time :",end_DS-start_DS) 
+
+            start_VitPose = time.time()
+            person_results = DS_preprocess(tracks)
+
+            out, _ = inference_top_down_pose_model(pose_model,image,person_results,bbox_thr=0.4,format='xyxy')
             for j in range(len(out)):
                 out[j]['bbox']=out[j]['bbox'].tolist()
                 out[j]['keypoints']=out[j]['keypoints'].tolist()
 
+            end_VitPose= time.time()
 
-            if not FirstDetected:
-                detected_people=len(out)
-                if detected_people>0:
-                    FirstDetected=True
-                    for i in range(detected_people):
-                        out[i]['track_id']=i
-                    next_id=detected_people
-                    list_lastouts[0]=out
+            print("VitPose estimation time :",end_VitPose-start_VitPose) 
+            print('TOTAL TIME : ',end_VitPose - start_yolo)
+            print("\n------------------------------------\nresults of VitPose : ", [outs['track_id'] for outs in out],"\n")
 
-            else:
-                # After first frame, compute tracking from previous frames         
-                detected_people=len(out)
-                if detected_people>0:
-                    assigned_IDs=[]
-                    assigned_bboxes=[]
-                    notassigned_bboxes=list(range(len(out)))
-                    for l in range(len(list_lastouts)):
-                        if len(assigned_bboxes)!=detected_people:
-                            lastout=list_lastouts[l]                    
-                            people=len(lastout)
-                            if people>0:
-                                aux_out=out.copy()
-                                bbox_relation=list(range(len(aux_out)))
-                                aux_lastout=lastout.copy()
-                                for i in reversed(range(len(aux_out))):
-                                    if i in assigned_bboxes:
-                                        del aux_out[i]
-                                        del bbox_relation[i]
-                                for i in reversed(range(len(aux_lastout))):
-                                    if aux_lastout[i]['track_id'] in assigned_IDs:
-                                        del aux_lastout[i]
-                                aux_out,aux_lastout=custom_tracking(aux_out,aux_lastout,min_keypoints=3,use_oks=False,tracking_thr=0.3,use_one_euro=False,fps=None)
-                                for i in range(len(aux_out)):
-                                    if aux_out[i]['track_id'] !=-1:
-                                        out[bbox_relation[i]]['track_id']=aux_out[i]['track_id']
-                                        assigned_IDs.append(aux_out[i]['track_id'])
-                                        assigned_bboxes.append(bbox_relation[i])
-                                        notassigned_bboxes.remove(bbox_relation[i])
 
-                    for i in range(len(notassigned_bboxes)):
-                        out[notassigned_bboxes[i]]['track_id']=next_id
-                        next_id+=1
+            # Update VitPose outputs with track IDs
+            for i,track in enumerate(tracks):
+                if not track.is_confirmed():
+                    continue
+                out[i]['track_id'] = track.track_id
 
-                    # Update list of lastouts
-                    for i in range(length):
-                        if i==4:
-                            list_lastouts[0]=out.copy()
-                        else:
-                            list_lastouts[4-i]=list_lastouts[3-i].copy()
-            print("final results out :",out)
             image_with_output = draw_data_on_image(image,out)
             _, frame_with_output = cv2.imencode('.jpg', image_with_output)
 
