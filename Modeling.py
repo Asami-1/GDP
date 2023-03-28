@@ -96,7 +96,7 @@ class SaveWeightsJSON(Callback):
                 self.best_train_accuracy = logs.get('accuracy')
                 self.best_test_accuracy = test_acc
                 weights_file_path = os.path.join(self.weights_path, f"{self.model_name}.h5")
-                self.model.save_weights(weights_file_path, overwrite=True)
+                self.model.save(weights_file_path, overwrite=True)
                                 
     def on_train_end(self, logs=None):
         self.json_data['best_epoch'] = self.best_epoch
