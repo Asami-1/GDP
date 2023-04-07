@@ -1,0 +1,17 @@
+{
+  "model_name": "model128",
+  "model_type": "CNN_BiLSTM",
+  "num_frames": 10,
+  "num_features": 24,
+  "num_layers": 4,
+  "dropout_rate": 0.4,
+  "optimizer": "sgd",
+  "batch_size": 64,
+  "learning_rate": 0.1,
+  "best_epoch": 114,
+  "best_train_acc": 0.8131407499313354,
+  "best_test_acc": 0.7981427174975562,
+  "training_time": 607.1907081604004
+}
+
+0 1 2 3 4
