@@ -329,8 +329,8 @@ except:
 
 split_seqs_path = os.path.join(GDP_path,'split_seqs')
 weights_path = os.path.join(GDP_path, 'weights')
-split_train_path = os.path.join(split_seqs_path,'run1_a+p_dist_1_0.5','train')
-split_test_path = os.path.join(split_seqs_path,'run1_a+p_dist_1_0.5','test')
+split_train_path = os.path.join(split_seqs_path,'path/to/sequence/run','train')
+split_test_path = os.path.join(split_seqs_path,'path/to/sequence/run','test')
 
 # Run a desired model using the belove line:
 
